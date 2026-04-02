@@ -10,6 +10,7 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.schemas.user import Token, UserCreate, UserLogin, UserResponse
+from app.services.email_service import notify_new_signup
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -29,6 +30,13 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Notify founder of new signup (fire-and-forget, never blocks registration)
+    try:
+        notify_new_signup(user.email)
+    except Exception:
+        pass
+
     return user
 
 

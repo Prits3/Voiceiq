@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -15,15 +16,16 @@ const nav = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white px-3 py-5">
+    <aside className="flex h-screen w-56 flex-col border-r border-white/[0.06] bg-[#08080f] px-3 py-5 flex-shrink-0">
       {/* Logo */}
-      <div className="mb-8 flex items-center gap-2 px-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-          <PhoneIcon className="h-4 w-4 text-white" />
+      <div className="mb-8 flex items-center gap-2.5 px-2">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-violet-500/30">
+          V
         </div>
-        <span className="text-base font-bold text-gray-900 tracking-tight">VoiceIQ</span>
+        <span className="text-white font-semibold text-base tracking-tight">VoiceIQ</span>
       </div>
 
       {/* Nav */}
@@ -37,11 +39,11 @@ export default function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-violet-500/10 text-violet-300 border border-violet-500/15"
+                  : "text-slate-400 hover:bg-white/[0.04] hover:text-white border border-transparent"
               )}
             >
-              <Icon className={cn("h-4 w-4", active ? "text-indigo-600" : "text-gray-400")} />
+              <Icon className={cn("h-4 w-4 flex-shrink-0", active ? "text-violet-400" : "text-slate-500")} />
               {label}
             </Link>
           );
@@ -49,20 +51,20 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-gray-100 pt-3">
-        <Link
-          href="/login"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+      <div className="border-t border-white/[0.06] pt-3">
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 transition-colors border border-transparent"
         >
-          <LogoutIcon className="h-4 w-4 text-gray-400" />
+          <LogoutIcon className="h-4 w-4 text-slate-600" />
           Sign out
-        </Link>
+        </button>
       </div>
     </aside>
   );
 }
 
-// Inline SVG icons (no icon library dependency)
+// Inline SVG icons
 function HomeIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

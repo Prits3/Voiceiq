@@ -61,7 +61,7 @@ export default function VoiceProfileForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+        <label className="mb-1 block text-sm font-medium text-slate-300">Name</label>
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -71,50 +71,52 @@ export default function VoiceProfileForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Provider</label>
+        <label className="mb-1 block text-sm font-medium text-slate-300">Provider</label>
         <select
           value={provider}
           onChange={(e) => setProvider(e.target.value as VoiceProvider)}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-slate-300 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors"
           required
         >
-          <option value="elevenlabs">ElevenLabs</option>
-          <option value="openai">OpenAI</option>
+          <option value="elevenlabs" className="bg-[#0d0d14]">ElevenLabs</option>
+          <option value="openai" className="bg-[#0d0d14]">OpenAI</option>
         </select>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Voice ID</label>
+        <label className="mb-1 block text-sm font-medium text-slate-300">Voice ID</label>
         <Input
           value={voiceId}
           onChange={(e) => setVoiceId(e.target.value)}
           placeholder={
-            provider === "elevenlabs" ? "21m00Tcm4TlvDq8ikWAM" : "alloy"
+            provider === "elevenlabs" ? "21m00Tcm4TlvDq8ikWAM" : "nova"
           }
           required
         />
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-slate-600">
           {provider === "elevenlabs"
             ? "ElevenLabs voice ID from your account"
-            : "OpenAI TTS voice: alloy, echo, fable, onyx, nova, or shimmer"}
+            : "Most natural-sounding: nova or shimmer. Others: alloy, echo, fable, onyx"}
         </p>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Settings <span className="text-gray-400">(optional JSON)</span>
+        <label className="mb-1 block text-sm font-medium text-slate-300">
+          Settings <span className="text-slate-600">(optional JSON)</span>
         </label>
         <textarea
           value={settingsJson}
           onChange={(e) => setSettingsJson(e.target.value)}
-          placeholder={'{\n  "stability": 0.5,\n  "similarity_boost": 0.75\n}'}
+          placeholder={'{\n  "stability": 0.3,\n  "similarity_boost": 0.85,\n  "style": 0.45,\n  "use_speaker_boost": true\n}'}
           rows={4}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-mono text-sm text-white placeholder:text-slate-600 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none transition-colors"
         />
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3.5 py-2.5">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
       )}
 
       <div className="flex justify-end gap-2">

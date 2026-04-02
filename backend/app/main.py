@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import init_db
-from app.routes import auth, campaigns, calls, leads, phone_numbers, voices, voice_webhook
+from app.routes import auth, campaigns, calls, leads, phone_numbers, voices, voice_webhook, vapi_webhook, demo
 
 
 @asynccontextmanager
@@ -29,7 +29,7 @@ import os
 
 _cors_origins = os.getenv(
     "CORS_ORIGINS",
-    "http://localhost:3000"
+    "http://localhost:3000,http://localhost:3001"
 ).split(",")
 
 app.add_middleware(
@@ -50,6 +50,8 @@ app.include_router(calls.router)
 app.include_router(phone_numbers.router)
 app.include_router(voices.router)
 app.include_router(voice_webhook.router)
+app.include_router(vapi_webhook.router)
+app.include_router(demo.router)
 
 
 @app.get("/", tags=["health"])

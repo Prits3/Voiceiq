@@ -16,12 +16,12 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: "bg-gray-100 text-gray-700",
-  success: "bg-green-100 text-green-700",
-  warning: "bg-yellow-100 text-yellow-700",
-  danger: "bg-red-100 text-red-700",
-  info: "bg-blue-100 text-blue-700",
-  purple: "bg-purple-100 text-purple-700",
+  default: "bg-white/8 text-slate-400 border border-white/10",
+  success: "bg-green-500/10 text-green-400 border border-green-500/20",
+  warning: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20",
+  danger:  "bg-red-500/10 text-red-400 border border-red-500/20",
+  info:    "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20",
+  purple:  "bg-violet-500/10 text-violet-400 border border-violet-500/20",
 };
 
 export default function Badge({
@@ -42,13 +42,11 @@ export default function Badge({
   );
 }
 
-// ─── Convenience status badge helpers ─────────────────────────────────────────
-
 export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
   const map: Record<CampaignStatus, { label: string; variant: BadgeVariant }> = {
-    draft: { label: "Draft", variant: "default" },
-    active: { label: "Active", variant: "success" },
-    paused: { label: "Paused", variant: "warning" },
+    draft:     { label: "Draft",     variant: "default" },
+    active:    { label: "Active",    variant: "success" },
+    paused:    { label: "Paused",    variant: "warning" },
     completed: { label: "Completed", variant: "info" },
   };
   const { label, variant } = map[status] ?? { label: status, variant: "default" };
@@ -57,10 +55,10 @@ export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
 
 export function LeadStatusBadge({ status }: { status: LeadStatus }) {
   const map: Record<LeadStatus, { label: string; variant: BadgeVariant }> = {
-    pending: { label: "Pending", variant: "default" },
-    called: { label: "Called", variant: "info" },
-    converted: { label: "Converted", variant: "success" },
-    do_not_call: { label: "Do Not Call", variant: "danger" },
+    pending:     { label: "Pending",      variant: "default" },
+    called:      { label: "Called",       variant: "info" },
+    converted:   { label: "Converted",    variant: "success" },
+    do_not_call: { label: "Do Not Call",  variant: "danger" },
   };
   const { label, variant } = map[status] ?? { label: status, variant: "default" };
   return <Badge variant={variant}>{label}</Badge>;
@@ -68,10 +66,10 @@ export function LeadStatusBadge({ status }: { status: LeadStatus }) {
 
 export function CallStatusBadge({ status }: { status: CallStatus }) {
   const map: Record<CallStatus, { label: string; variant: BadgeVariant }> = {
-    pending: { label: "Pending", variant: "default" },
+    pending:     { label: "Pending",     variant: "default" },
     in_progress: { label: "In Progress", variant: "warning" },
-    completed: { label: "Completed", variant: "success" },
-    failed: { label: "Failed", variant: "danger" },
+    completed:   { label: "Completed",   variant: "success" },
+    failed:      { label: "Failed",      variant: "danger" },
   };
   const { label, variant } = map[status] ?? { label: status, variant: "default" };
   return <Badge variant={variant}>{label}</Badge>;

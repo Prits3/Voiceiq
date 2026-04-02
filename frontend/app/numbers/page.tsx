@@ -37,10 +37,7 @@ export default function NumbersPage() {
     setAddError(null);
     setIsAdding(true);
     try {
-      await phoneNumbersApi.create({
-        number: newNumber,
-        twilio_sid: newSid || undefined,
-      });
+      await phoneNumbersApi.create({ number: newNumber, twilio_sid: newSid || undefined });
       setShowAdd(false);
       setNewNumber("");
       setNewSid("");
@@ -56,57 +53,43 @@ export default function NumbersPage() {
     <AppShell>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Phone Numbers</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage Twilio phone numbers for outbound calls
-          </p>
+          <h1 className="text-2xl font-bold text-white">Phone Numbers</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage Twilio phone numbers for outbound calls</p>
         </div>
         <Button onClick={() => setShowAdd(true)}>+ Add Number</Button>
       </div>
 
       {error && (
-        <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </p>
+        <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
       )}
 
       <PhoneNumberTable numbers={numbers} isLoading={isLoading} onRefresh={load} />
 
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Phone Number">
         <form onSubmit={handleAdd} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Phone Number
-            </label>
-            <Input
-              value={newNumber}
-              onChange={(e) => setNewNumber(e.target.value)}
-              placeholder="+15551234567"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Twilio SID <span className="text-gray-400">(optional)</span>
-            </label>
-            <Input
-              value={newSid}
-              onChange={(e) => setNewSid(e.target.value)}
-              placeholder="PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-            />
-          </div>
+          <Input
+            label="Phone Number"
+            value={newNumber}
+            onChange={(e) => setNewNumber(e.target.value)}
+            placeholder="+15551234567"
+            required
+          />
+          <Input
+            label="Twilio SID (optional)"
+            value={newSid}
+            onChange={(e) => setNewSid(e.target.value)}
+            placeholder="PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          />
           {addError && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
-              {addError}
-            </p>
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
+              <p className="text-sm text-red-400">{addError}</p>
+            </div>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={() => setShowAdd(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={isAdding}>
-              Add Number
-            </Button>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" type="button" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button type="submit" isLoading={isAdding}>Add Number</Button>
           </div>
         </form>
       </Modal>

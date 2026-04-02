@@ -1,14 +1,71 @@
+import os
+import re
+
 from fastapi import APIRouter, Depends, Form, Request, Response
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from twilio.twiml.voice_response import Gather, VoiceResponse
 
+from app.core.config import settings
 from app.core.database import get_db
-from app.models.call import Call, CallStatus
+from app.models.call import Call
+from app.models.call import CallStatus as CallStatusEnum
 from app.services.ai_agent_service import AIAgentService
-from app.services.tts_service import TTSService
+from app.services.tts_service import tts_service
 
 router = APIRouter(prefix="/webhook", tags=["webhook"])
 
+# Safe filename pattern: 32 hex chars + .mp3
+_SAFE_FILENAME = re.compile(r'^[a-f0-9]{32}\.mp3$')
+
+# Kokoro voice to use for all outbound calls
+_CALL_VOICE = "af_heart"
+
+
+async def _play_or_say(response: VoiceResponse, text: str) -> None:
+    """
+    Try to generate audio via Kokoro → Azure.
+    If both fail, fall back to Twilio <Say> so the call never crashes.
+    """
+    audio_bytes = await tts_service.synthesize_for_call(text, voice=_CALL_VOICE)
+    if audio_bytes:
+        filename = await tts_service.save_audio_file(audio_bytes)
+        base_url = getattr(settings, "BASE_URL", "").rstrip("/")
+        response.play(f"{base_url}/webhook/voice/audio/{filename}")
+    else:
+        # Last-resort fallback: Twilio built-in Google Neural TTS
+        response.say(text, voice="Google.en-US-Journey-F")
+
+
+async def _play_or_say_in_gather(gather: Gather, text: str) -> None:
+    """Same as _play_or_say but appends into a <Gather> block."""
+    audio_bytes = await tts_service.synthesize_for_call(text, voice=_CALL_VOICE)
+    if audio_bytes:
+        filename = await tts_service.save_audio_file(audio_bytes)
+        base_url = getattr(settings, "BASE_URL", "").rstrip("/")
+        gather.play(f"{base_url}/webhook/voice/audio/{filename}")
+    else:
+        gather.say(text, voice="Google.en-US-Journey-F")
+
+
+# ------------------------------------------------------------------ #
+#  Audio file serving                                                  #
+# ------------------------------------------------------------------ #
+
+@router.get("/voice/audio/{filename}")
+async def serve_audio(filename: str):
+    """Serve a generated MP3 file to Twilio. Validates filename to prevent path traversal."""
+    if not _SAFE_FILENAME.match(filename):
+        return Response(content="not found", status_code=404)
+    path = f"/tmp/{filename}"
+    if not os.path.exists(path):
+        return Response(content="not found", status_code=404)
+    return FileResponse(path, media_type="audio/mpeg")
+
+
+# ------------------------------------------------------------------ #
+#  Twilio voice webhooks                                               #
+# ------------------------------------------------------------------ #
 
 @router.post("/voice/incoming")
 async def handle_incoming_call(
@@ -27,12 +84,9 @@ async def handle_incoming_call(
         speech_timeout="auto",
         language="en-US",
     )
-    gather.say(
-        "Hello! Thank you for calling. How can I help you today?",
-        voice="Polly.Joanna",
-    )
+    await _play_or_say_in_gather(gather, "Hello! Thank you for calling. How can I help you today?")
     response.append(gather)
-    response.say("We didn't receive any input. Goodbye!")
+    await _play_or_say(response, "We didn't receive any input. Goodbye!")
     return Response(content=str(response), media_type="application/xml")
 
 
@@ -60,9 +114,9 @@ async def handle_outbound_call(
         speech_timeout="auto",
         language="en-US",
     )
-    gather.say(script_text, voice="Polly.Joanna")
+    await _play_or_say_in_gather(gather, script_text)
     response.append(gather)
-    response.say("Thank you for your time. Goodbye!")
+    await _play_or_say(response, "Thank you for your time. Goodbye!")
     response.hangup()
 
     return Response(content=str(response), media_type="application/xml")
@@ -80,11 +134,10 @@ async def handle_gather(
     response = VoiceResponse()
 
     if not SpeechResult:
-        response.say("I'm sorry, I didn't catch that. Goodbye!")
+        await _play_or_say(response, "I'm sorry, I didn't catch that. Goodbye!")
         response.hangup()
         return Response(content=str(response), media_type="application/xml")
 
-    # Use AI agent to generate a response based on speech input
     call = db.query(Call).filter(Call.twilio_call_sid == CallSid).first()
     if call and call.campaign:
         ai_service = AIAgentService()
@@ -92,7 +145,6 @@ async def handle_gather(
             user_input=SpeechResult,
             campaign_script=call.campaign.script or "",
         )
-        # Update transcript
         existing_transcript = call.transcript or ""
         call.transcript = (
             existing_transcript
@@ -103,7 +155,7 @@ async def handle_gather(
     else:
         reply_text = "Thank you for your response. We'll follow up with you soon. Goodbye!"
 
-    response.say(reply_text, voice="Polly.Joanna")
+    await _play_or_say(response, reply_text)
     response.hangup()
     return Response(content=str(response), media_type="application/xml")
 
@@ -120,12 +172,12 @@ async def handle_call_status(
     call = db.query(Call).filter(Call.twilio_call_sid == CallSid).first()
     if call:
         status_map = {
-            "completed": CallStatus.completed,
-            "failed": CallStatus.failed,
-            "busy": CallStatus.failed,
-            "no-answer": CallStatus.failed,
-            "canceled": CallStatus.failed,
-            "in-progress": CallStatus.in_progress,
+            "completed": CallStatusEnum.completed,
+            "failed": CallStatusEnum.failed,
+            "busy": CallStatusEnum.failed,
+            "no-answer": CallStatusEnum.failed,
+            "canceled": CallStatusEnum.failed,
+            "in-progress": CallStatusEnum.in_progress,
         }
         new_status = status_map.get(CallStatus.lower(), call.status)
         call.status = new_status

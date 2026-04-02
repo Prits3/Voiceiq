@@ -55,12 +55,12 @@ export default function LeadImport({ campaignId, onImport, onSuccess }: LeadImpo
         onClick={() => fileInputRef.current?.click()}
         className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition ${
           isDragging
-            ? "border-indigo-400 bg-indigo-50"
-            : "border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50/30"
+            ? "border-violet-500/50 bg-violet-500/10"
+            : "border-white/10 bg-white/[0.02] hover:border-violet-500/30 hover:bg-white/[0.04]"
         }`}
       >
         <svg
-          className="mb-2 h-8 w-8 text-gray-400"
+          className="mb-2 h-8 w-8 text-slate-500"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -72,11 +72,11 @@ export default function LeadImport({ campaignId, onImport, onSuccess }: LeadImpo
             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
           />
         </svg>
-        <p className="text-sm font-medium text-gray-700">
+        <p className="text-sm font-medium text-slate-300">
           Drop a CSV file here, or{" "}
-          <span className="text-indigo-600">click to browse</span>
+          <span className="text-violet-400">click to browse</span>
         </p>
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-slate-600">
           Required columns: first_name, phone_number. Optional: last_name, email
         </p>
       </div>
@@ -94,13 +94,19 @@ export default function LeadImport({ campaignId, onImport, onSuccess }: LeadImpo
       />
 
       {isUploading && (
-        <p className="text-sm text-indigo-600">Uploading and importing leads...</p>
+        <p className="text-sm text-violet-400">Uploading and importing leads...</p>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3.5 py-2.5">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
       {result && (
-        <p className="text-sm text-green-600">
-          Successfully imported {result.count} lead{result.count !== 1 ? "s" : ""}.
-        </p>
+        <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-3.5 py-2.5">
+          <p className="text-sm text-green-400">
+            Successfully imported {result.count} lead{result.count !== 1 ? "s" : ""}.
+          </p>
+        </div>
       )}
     </div>
   );

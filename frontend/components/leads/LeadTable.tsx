@@ -23,7 +23,7 @@ export default function LeadTable({
 }: LeadTableProps) {
   return (
     <Table
-      keyExtractor={(row) => row.id}
+      keyExtractor={(row) => row.id as string | number}
       isLoading={isLoading}
       emptyMessage="No leads yet. Import a CSV or add leads manually."
       data={leads as unknown as Record<string, unknown>[]}

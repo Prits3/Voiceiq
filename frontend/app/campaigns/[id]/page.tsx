@@ -43,7 +43,7 @@ export default function CampaignDetailPage() {
   if (isLoadingCampaign) {
     return (
       <AppShell>
-        <div className="h-8 w-64 animate-pulse rounded bg-gray-100" />
+        <div className="h-8 w-64 animate-pulse rounded-lg bg-white/[0.06]" />
       </AppShell>
     );
   }
@@ -56,31 +56,29 @@ export default function CampaignDetailPage() {
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">{campaign.name}</h1>
+            <h1 className="text-2xl font-bold text-white">{campaign.name}</h1>
             <CampaignStatusBadge status={campaign.status} />
           </div>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-slate-500">
             Created {formatDate(campaign.created_at)}
           </p>
           {campaign.script && (
-            <p className="mt-2 max-w-2xl text-sm text-gray-600">{campaign.script}</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">{campaign.script}</p>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowEdit(true)}>
-          Edit
-        </Button>
+        <Button variant="outline" size="sm" onClick={() => setShowEdit(true)}>Edit</Button>
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 border-b border-gray-200">
+      <div className="mb-6 flex gap-1 border-b border-white/8">
         {(["leads", "calls", "settings"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${
               tab === t
-                ? "border-b-2 border-indigo-600 text-indigo-600"
-                : "text-gray-500 hover:text-gray-800"
+                ? "border-b-2 border-violet-500 text-violet-300"
+                : "text-slate-500 hover:text-slate-300"
             }`}
           >
             {t}
@@ -96,11 +94,7 @@ export default function CampaignDetailPage() {
               Import CSV
             </Button>
           </div>
-          <LeadTable
-            leads={leads}
-            isLoading={leadsLoading}
-            onRefresh={refreshLeads}
-          />
+          <LeadTable leads={leads} isLoading={leadsLoading} onRefresh={refreshLeads} />
         </div>
       )}
 
@@ -112,42 +106,24 @@ export default function CampaignDetailPage() {
         <div className="max-w-xl">
           <CampaignForm
             campaign={campaign}
-            onSuccess={(updated) => {
-              setCampaign(updated);
-            }}
+            onSuccess={(updated) => setCampaign(updated)}
             onCancel={() => setTab("leads")}
           />
         </div>
       )}
 
-      {/* Import modal */}
-      <Modal
-        isOpen={showImport}
-        onClose={() => setShowImport(false)}
-        title="Import Leads"
-      >
+      <Modal isOpen={showImport} onClose={() => setShowImport(false)} title="Import Leads">
         <LeadImport
           campaignId={campaignId}
           onImport={importCsv}
-          onSuccess={() => {
-            setShowImport(false);
-            void refreshLeads();
-          }}
+          onSuccess={() => { setShowImport(false); void refreshLeads(); }}
         />
       </Modal>
 
-      {/* Edit modal */}
-      <Modal
-        isOpen={showEdit}
-        onClose={() => setShowEdit(false)}
-        title="Edit Campaign"
-      >
+      <Modal isOpen={showEdit} onClose={() => setShowEdit(false)} title="Edit Campaign">
         <CampaignForm
           campaign={campaign}
-          onSuccess={(updated) => {
-            setCampaign(updated);
-            setShowEdit(false);
-          }}
+          onSuccess={(updated) => { setCampaign(updated); setShowEdit(false); }}
           onCancel={() => setShowEdit(false)}
         />
       </Modal>
