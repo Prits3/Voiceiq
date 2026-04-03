@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import init_db
-from app.routes import auth, campaigns, calls, leads, phone_numbers, voices, voice_webhook, vapi_webhook, demo
+from app.routes import auth, campaigns, calls, leads, phone_numbers, voices, voice_webhook, vapi_webhook, demo, pipecat_webhook
 
 
 @asynccontextmanager
@@ -52,6 +52,7 @@ app.include_router(voices.router)
 app.include_router(voice_webhook.router)
 app.include_router(vapi_webhook.router)
 app.include_router(demo.router)
+app.include_router(pipecat_webhook.router)
 
 
 @app.get("/", tags=["health"])

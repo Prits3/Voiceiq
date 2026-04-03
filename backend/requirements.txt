@@ -23,6 +23,10 @@ openai==1.30.1
 # Groq
 groq>=1.0.0
 
+# Pipecat (real-time voice pipeline: Twilio → Groq STT/LLM → Kokoro TTS)
+pipecat-ai[silero,groq]>=0.0.50
+loguru>=0.7.0
+
 # HTTP client
 httpx==0.27.0
 
