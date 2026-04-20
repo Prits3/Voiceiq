@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 type Line        = { role: "AI" | "Customer"; text: string; voice: string | null };
 type LiveMsg     = { role: "AI" | "User"; text: string };
 type QuickStatus = "idle" | "generating" | "calling" | "done";
-type LiveStatus  = "idle" | "preparing" | "connecting" | "active" | "ai-speaking" | "listening" | "ended" | "limit-reached";
+type LiveStatus  = "idle" | "connecting" | "active" | "ai-speaking" | "listening" | "ended" | "limit-reached";
 type VoiceKey    = "female" | "male" | "friendly";
 type LangKey     = "en" | "de" | "ar";
 
@@ -22,7 +22,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const DEMO_CALL_LIMIT   = 1;
 const DEMO_STORAGE_KEY  = "voiceiq_demo_calls";
 const CALL_TIME_LIMIT_S = 120;     // 2-minute demo — enough for a real conversation
-const PREP_DELAY_MS     = 2200;    // "Preparing…" pause filters low-intent users
 
 const IS_DEV = typeof window !== "undefined" && window.location.hostname === "localhost";
 
@@ -94,23 +93,25 @@ let _audioCtx: AudioContext | null = null;
 let _currentSource: AudioBufferSourceNode | null = null;
 
 function getAudioCtx(): AudioContext {
-  if (!_audioCtx) _audioCtx = new AudioContext();
+  // Recreate if null or closed (browsers can close inactive contexts)
+  if (!_audioCtx || _audioCtx.state === "closed") {
+    _audioCtx = new AudioContext();
+  }
   return _audioCtx;
 }
 
 /**
  * Must be called synchronously inside a user-gesture handler (button click).
- * Resumes the AudioContext — once unlocked it stays unlocked across all async awaits,
- * unlike HTMLAudioElement which loses the gesture context after the first await.
+ * Creates + resumes the AudioContext inside the gesture so it stays unlocked.
  */
 function unlockAudio() {
   try {
     const ctx = getAudioCtx();
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state !== "running") ctx.resume();
   } catch {}
 }
 
-/** Fetch TTS audio from backend, returns a blob URL (or null on failure). */
+/** Fetch TTS audio from backend, returns MP3 bytes as a blob URL (or null on failure). */
 async function fetchTTSAudio(text: string, voiceKey: VoiceKey): Promise<string | null> {
   try {
     const res = await fetch(`${API_URL}/demo/tts`, {
@@ -123,7 +124,7 @@ async function fetchTTSAudio(text: string, voiceKey: VoiceKey): Promise<string |
       return null;
     }
     const blob = await res.blob();
-    console.log("[VoiceIQ TTS] got audio blob", blob.size, "bytes");
+    console.log("[VoiceIQ TTS] got audio blob", blob.size, "bytes, type:", blob.type);
     return URL.createObjectURL(blob);
   } catch (err) {
     console.warn("[VoiceIQ TTS] fetch failed:", err);
@@ -131,21 +132,21 @@ async function fetchTTSAudio(text: string, voiceKey: VoiceKey): Promise<string |
   }
 }
 
-/** Play a pre-fetched blob URL via AudioContext (immune to autoplay restrictions). */
+/** Play a blob URL. Tries AudioContext first, falls back to HTMLAudioElement. */
 async function playAudioUrl(url: string): Promise<void> {
+  // --- Try AudioContext first ---
   try {
     const ctx = getAudioCtx();
-    if (ctx.state === "suspended") await ctx.resume();
+    // Always attempt resume — no-op if already running
+    if (ctx.state !== "running") await ctx.resume();
 
-    // Fetch the blob URL as an ArrayBuffer and decode it
     const resp = await fetch(url);
     const arrayBuffer = await resp.arrayBuffer();
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
-    // Stop any currently playing audio
     if (_currentSource) { try { _currentSource.stop(); } catch {} _currentSource = null; }
 
-    return new Promise((resolve) => {
+    return await new Promise((resolve) => {
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
@@ -158,7 +159,19 @@ async function playAudioUrl(url: string): Promise<void> {
       source.start();
     });
   } catch (e) {
-    console.warn("[VoiceIQ] AudioContext playback failed:", e);
+    console.warn("[VoiceIQ] AudioContext failed, trying HTMLAudioElement:", e);
+  }
+
+  // --- Fallback: HTMLAudioElement ---
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const audio = new Audio(url);
+      audio.onended = () => { try { URL.revokeObjectURL(url); } catch {} resolve(); };
+      audio.onerror = () => { try { URL.revokeObjectURL(url); } catch {} reject(); };
+      audio.play().catch(reject);
+    });
+  } catch (e) {
+    console.warn("[VoiceIQ] HTMLAudioElement also failed:", e);
     try { URL.revokeObjectURL(url); } catch {}
   }
 }
@@ -258,10 +271,10 @@ function UpgradeModal({ onClose, onQuickDemo }: { onClose: () => void; onQuickDe
         </div>
 
         <a
-          href="/login"
+          href="mailto:pritikatimsina2345@gmail.com?subject=VoiceIQ%20Inquiry&body=Hi,%20I%E2%80%99d%20like%20to%20learn%20more%20about%20VoiceIQ."
           className="relative block w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-violet-500/30 mb-3"
         >
-          Upgrade Now — Start Free Trial →
+          Get Early Access →
         </a>
         <button
           onClick={() => { onClose(); onQuickDemo(); }}
@@ -400,15 +413,9 @@ export default function Demo() {
     cancelledRef.current = false;
     setLiveError(null);
     setLiveMessages([]);
-    setLiveStatus("preparing");
-    await sleep(PREP_DELAY_MS);
-    if (cancelledRef.current) return;
-
     setLiveStatus("connecting");
-    await sleep(1500);
-    if (cancelledRef.current) return;
 
-    // Try to generate AI script from backend; fall back to built-in script
+    // Fetch script immediately — no artificial delay
     let lines: Line[];
     try {
       const ac = new AbortController();
@@ -438,19 +445,7 @@ export default function Demo() {
       setSecondsLeft((s) => Math.max(0, s - 1));
     }, 1000);
 
-    // Pre-fetch all AI audio in parallel before playback
-    const liveAudioUrls = new Map<number, string>();
-    if (!muted) {
-      await Promise.all(
-        lines.map(async (line, i) => {
-          if (line.role === "AI") {
-            const url = await fetchTTSAudio(line.text, voiceKey);
-            if (url) liveAudioUrls.set(i, url);
-          }
-        })
-      );
-    }
-
+    // Play lines one by one — fetch TTS per line (no bulk pre-fetch delay)
     for (const [i, line] of lines.entries()) {
       if (cancelledRef.current) break;
 
@@ -461,16 +456,16 @@ export default function Demo() {
       if (line.role === "AI") {
         setLiveStatus("ai-speaking");
         if (!muted) {
-          const url = liveAudioUrls.get(i);
+          const url = await fetchTTSAudio(line.text, voiceKey);
           if (url) await playAudioUrl(url);
           else await sleep(600 + Math.min(line.text.length * 35, 2500));
         } else {
           await sleep(600 + Math.min(line.text.length * 35, 2500));
         }
         if (cancelledRef.current) break;
-        await sleep(400);
+        await sleep(300);
         setLiveStatus("listening");
-        await sleep(900);
+        await sleep(800);
       } else {
         setLiveStatus("listening");
         await sleep(1200 + Math.min(line.text.length * 20, 2000));
@@ -503,7 +498,7 @@ export default function Demo() {
   const demoLimitReached = demoCallsUsed >= DEMO_CALL_LIMIT;
 
   return (
-    <section id="demo" className="py-24 px-6 relative">
+    <section id="demo" className="py-40 px-6 relative">
       {/* Upgrade modal */}
       <AnimatePresence>
         {showUpgradeModal && (
@@ -515,7 +510,8 @@ export default function Demo() {
       </AnimatePresence>
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-violet-600/6 rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-violet-600/8 rounded-full blur-[140px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-cyan-500/5 rounded-full blur-[100px]" />
       </div>
 
       <div className="max-w-3xl mx-auto relative">
@@ -526,17 +522,16 @@ export default function Demo() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
-          <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-1.5 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-cyan-300 text-sm font-medium">Interactive Demo</span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Try VoiceIQ in Action
+          <p className="text-slate-500 text-sm font-semibold uppercase tracking-widest mb-5">
+            Live demo
+          </p>
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-5 leading-tight">
+            Hear it for yourself.
           </h2>
-          <p className="text-slate-400 text-lg">
-            Watch the AI run a full cold call — or talk to it live
+          <p className="text-slate-400 text-lg font-light">
+            Enter what you sell. Your AI rep calls in seconds.
           </p>
         </motion.div>
 
@@ -807,19 +802,6 @@ export default function Demo() {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.25 }}
             >
-              {/* Preparing — 2s filter delay */}
-              {liveStatus === "preparing" && (
-                <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-10 text-center backdrop-blur-sm">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-                    className="w-14 h-14 rounded-full border-2 border-violet-500/30 border-t-violet-500 mx-auto mb-5"
-                  />
-                  <p className="text-white font-medium mb-1">Preparing your AI assistant…</p>
-                  <p className="text-slate-500 text-sm">Setting up voice, context, and connection</p>
-                </div>
-              )}
-
               {/* Idle — product input */}
               {liveStatus === "idle" && (
                 <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center backdrop-blur-sm">
@@ -848,7 +830,7 @@ export default function Demo() {
                     disabled={!liveProduct.trim()}
                     className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30"
                   >
-                    {demoLimitReached ? "🔒 Upgrade to Call" : "🔥 Start Live Call Demo"}
+                    {demoLimitReached ? "Upgrade to Unlock Calls" : "Start Live Demo"}
                   </button>
 
                   {/* Usage counter */}

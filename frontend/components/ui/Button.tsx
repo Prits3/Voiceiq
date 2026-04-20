@@ -25,10 +25,11 @@ const variantClasses: Record<Variant, string> = {
     "border border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.04] hover:text-white focus:ring-violet-500 disabled:opacity-50",
 };
 
+// min-h ensures every size meets the 44px Apple HIG / WCAG touch target minimum
 const sizeClasses: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-xs",
-  md: "px-4 py-2 text-sm",
-  lg: "px-6 py-3 text-base",
+  sm: "px-3 py-1.5 text-xs min-h-[44px]",
+  md: "px-4 py-2 text-sm min-h-[44px]",
+  lg: "px-6 py-3 text-base min-h-[52px]",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -48,6 +49,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || isLoading}
+        aria-busy={isLoading || undefined}
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all",
           "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#05050a]",

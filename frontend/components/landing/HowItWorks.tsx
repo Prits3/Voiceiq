@@ -6,95 +6,90 @@ const steps = [
     num: "01",
     icon: "📋",
     title: "Upload Your Leads",
-    desc: "Import from CSV, connect HubSpot, Salesforce or paste a list. VoiceIQ enriches and prioritizes leads automatically.",
+    sub: "CSV, HubSpot, Salesforce, or paste a list.",
   },
   {
     num: "02",
     icon: "🎙️",
     title: "AI Calls & Qualifies",
-    desc: "Your AI rep makes calls, handles objections, follows your script, and captures intent signals in real time.",
+    sub: "Handles objections, follows your script, captures intent.",
   },
   {
     num: "03",
     icon: "🔥",
     title: "Get Warm Handoffs",
-    desc: "Qualified leads are flagged, scored, and handed to your reps. Only speak to prospects who are ready to buy.",
-  },
-  {
-    num: "04",
-    icon: "📊",
-    title: "Track & Optimize",
-    desc: "Full call transcripts, conversion dashboards, and A/B testing on scripts. Improve every week automatically.",
+    sub: "Only speak to prospects ready to buy.",
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 px-6 border-t border-white/5">
+    <section id="how-it-works" className="py-40 px-6">
       <div className="max-w-5xl mx-auto">
+
+        {/* Section label */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="text-center mb-24"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            How It Works
-          </h2>
-          <p className="text-slate-400 text-lg">
-            From lead list to booked meeting in minutes
+          <p className="text-slate-500 text-sm font-semibold uppercase tracking-widest mb-5">
+            How it works
           </p>
+          <h2 className="text-5xl md:text-6xl font-bold text-white leading-tight">
+            From list to meeting.
+            <br />
+            <span className="text-slate-500 font-normal">In minutes.</span>
+          </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-4 gap-8 relative">
-          {/* Connector lines between steps */}
-          <div className="hidden md:block absolute top-8 left-[calc(12.5%+2rem)] right-[calc(12.5%+2rem)] h-px bg-gradient-to-r from-violet-500/0 via-violet-500/40 to-violet-500/0" />
-
+        {/* Steps */}
+        <div className="grid md:grid-cols-3 gap-6 md:gap-12">
           {steps.map((step, i) => (
             <motion.div
               key={step.num}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 32 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.1 }}
-              className="relative text-center group"
+              transition={{ duration: 0.5, delay: i * 0.12 }}
+              className="flex flex-col items-center text-center md:items-start md:text-left"
             >
-              {/* Arrow between steps (except last) */}
-              {i < steps.length - 1 && (
-                <div className="hidden md:flex absolute top-6 -right-4 z-10 items-center justify-center w-8 h-8">
-                  <span className="text-violet-500/60 text-lg font-bold">›</span>
-                </div>
-              )}
-
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 border border-white/8 flex items-center justify-center text-3xl mx-auto mb-5 group-hover:scale-110 transition-transform">
+              {/* Icon */}
+              <div className="w-20 h-20 rounded-3xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-5xl mb-7">
                 {step.icon}
               </div>
-              <div className="text-xs font-mono text-violet-400 mb-2 tracking-widest">
+
+              {/* Step number */}
+              <p className="text-xs font-mono text-violet-500 tracking-widest mb-3">
                 {step.num}
-              </div>
-              <h3 className="text-white font-semibold text-base mb-2">{step.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed max-w-[180px] mx-auto">
-                {step.desc}
+              </p>
+
+              {/* Title */}
+              <h3 className="text-white font-semibold text-xl mb-2 leading-snug">
+                {step.title}
+              </h3>
+
+              {/* Subtitle */}
+              <p className="text-slate-500 text-sm leading-relaxed">
+                {step.sub}
               </p>
             </motion.div>
           ))}
         </div>
 
-        {/* Callout pill */}
+        {/* Bottom note */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-14 flex justify-center"
+          className="mt-20 text-center"
         >
-          <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/25 rounded-full px-6 py-3">
-            <span className="text-sm">⚡</span>
-            <span className="text-violet-300 text-sm font-medium">
-              Average team goes live in under 10 minutes
-            </span>
-          </div>
+          <p className="text-slate-600 text-sm">
+            Average setup time: <span className="text-slate-400">under 10 minutes</span>
+          </p>
         </motion.div>
       </div>
     </section>

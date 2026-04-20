@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { CONTACT_HREF } from "@/lib/landing-data";
 
 const plans = [
   {
@@ -17,8 +18,7 @@ const plans = [
       "Basic lead dashboard",
       "Email support",
     ],
-    cta: "Start Free Trial",
-    href: "/login",
+    cta: "Get Early Access",
     highlight: false,
   },
   {
@@ -38,8 +38,7 @@ const plans = [
       "Priority support",
       "Dedicated onboarding",
     ],
-    cta: "Start Free Trial",
-    href: "/login",
+    cta: "Get Early Access",
     highlight: true,
   },
   {
@@ -60,7 +59,6 @@ const plans = [
       "SLA & compliance support",
     ],
     cta: "Talk to Sales",
-    href: "mailto:hello@voiceiq.ai",
     highlight: false,
   },
 ];
@@ -142,7 +140,7 @@ export default function Pricing() {
 
               {/* CTA */}
               <a
-                href={plan.href}
+                href={CONTACT_HREF}
                 className={`relative block text-center py-3.5 rounded-xl font-semibold text-sm transition-all overflow-hidden ${
                   plan.highlight
                     ? "bg-violet-600 hover:bg-violet-500 text-white hover:shadow-lg hover:shadow-violet-500/25"

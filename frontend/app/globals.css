@@ -7,16 +7,55 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
+    /* Inter optical sizing & refined character variants */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
   }
 
   body {
     @apply bg-[#05050a] text-white;
+  }
+
+  /*
+   * Scroll offset so anchor links (#features, #pricing, etc.)
+   * don't hide behind the fixed 64px navbar.
+   */
+  [id] {
+    scroll-margin-top: 80px;
+  }
+
+  /*
+   * Global focus ring — shown only on keyboard navigation (not mouse click).
+   * Matches VoiceIQ violet accent.
+   */
+  :focus-visible {
+    outline: 2px solid rgb(139 92 246 / 0.75);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  /* Remove default outline for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
   }
 }
 
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.45s ease forwards;
+  }
+
+  /* Visually hidden but accessible to screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 }
 
