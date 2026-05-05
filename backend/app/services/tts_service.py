@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import time
 import uuid
 from typing import Optional
@@ -33,16 +32,17 @@ class TTSService:
     Text-to-speech service.
 
     Provider priority for live calls:
-      1. Kokoro-Web (self-hosted, free, human-sounding)
-      2. Azure Neural TTS (fallback)
-      3. None — caller falls back to Twilio <Say> in the webhook
+      1. Cartesia (primary — high quality, low latency)
+      2. Kokoro-Web (self-hosted fallback)
+      3. Azure Neural TTS (last resort)
+      4. None — caller falls back to Twilio <Say> in the webhook
 
     Existing providers (elevenlabs / openai) are kept for the Voice Profile
     feature in the dashboard and are not part of the call fallback chain.
     """
 
     # ------------------------------------------------------------------ #
-    #  Live-call TTS: Kokoro → Azure → (caller uses <Say> if both fail)  #
+    #  Live-call TTS: Cartesia → Kokoro → Azure → fallback               #
     # ------------------------------------------------------------------ #
 
     async def synthesize_for_call(
@@ -56,15 +56,19 @@ class TTSService:
         """
         _cleanup_old_files()
 
-        kokoro_url = getattr(settings, "KOKORO_BASE_URL", "")
-        if kokoro_url:
+        if getattr(settings, "CARTESIA_API_KEY", ""):
+            try:
+                return await self._cartesia_tts(text)
+            except Exception as e:
+                logger.warning("Cartesia TTS failed, trying Kokoro: %s", e)
+
+        if getattr(settings, "KOKORO_BASE_URL", ""):
             try:
                 return await self._kokoro_tts(text, voice)
             except Exception as e:
                 logger.warning("Kokoro TTS failed, trying Azure: %s", e)
 
-        azure_key = getattr(settings, "AZURE_SPEECH_KEY", "")
-        if azure_key:
+        if getattr(settings, "AZURE_SPEECH_KEY", ""):
             try:
                 return await self._azure_tts(text)
             except Exception as e:
@@ -82,11 +86,39 @@ class TTSService:
         _tmp_files[path] = time.time()
         return filename
 
+    async def _cartesia_tts(self, text: str) -> bytes:
+        """Cartesia sonic TTS — returns MP3 bytes."""
+        payload = {
+            "model_id": settings.CARTESIA_MODEL_ID,
+            "transcript": text,
+            "voice": {
+                "mode": "id",
+                "id": settings.CARTESIA_VOICE_ID,
+            },
+            "language": "en",
+            "output_format": {
+                "container": "mp3",
+                "bit_rate": 128000,
+                "sample_rate": 44100,
+            },
+        }
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(
+                "https://api.cartesia.ai/tts/bytes",
+                headers={
+                    "Authorization": f"Bearer {settings.CARTESIA_API_KEY}",
+                    "Cartesia-Version": settings.CARTESIA_VERSION,
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            return response.content
+
     async def _kokoro_tts(self, text: str, voice: str = "af_heart") -> bytes:
         """Call Kokoro-Web's OpenAI-compatible /audio/speech endpoint."""
         base_url = settings.KOKORO_BASE_URL.rstrip("/")
         api_key = getattr(settings, "KOKORO_API_KEY", "")
-
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
                 f"{base_url}/audio/speech",

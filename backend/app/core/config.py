@@ -23,11 +23,17 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
 
-    # Kokoro-Web (self-hosted TTS — primary voice engine for calls)
-    KOKORO_BASE_URL: str = ""       # e.g. https://kokoro-xxx.railway.app/api/v1
-    KOKORO_API_KEY: str = ""        # the KW_SECRET_API_KEY you set when deploying Kokoro
+    # Cartesia TTS (primary voice engine for calls)
+    CARTESIA_API_KEY: str = ""
+    CARTESIA_VOICE_ID: str = "de07efe3-b309-418b-bdca-42827223efd2"  # Rena — energetic young adult female
+    CARTESIA_MODEL_ID: str = "sonic-2"
+    CARTESIA_VERSION: str = "2024-06-10"
 
-    # Azure Neural TTS (fallback if Kokoro is down)
+    # Kokoro-Web (self-hosted TTS — legacy)
+    KOKORO_BASE_URL: str = ""
+    KOKORO_API_KEY: str = ""
+
+    # Azure Neural TTS (fallback)
     AZURE_SPEECH_KEY: str = ""
     AZURE_SPEECH_REGION: str = "westeurope"
 
